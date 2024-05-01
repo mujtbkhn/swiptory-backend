@@ -41,7 +41,6 @@ const getStory = async (req, res) => {
             stories = await story.find({ createdBy: userId });
             return res.status(200).json({ stories: stories });
         } else if (category && category.toLowerCase() === "all") {
-            // GROUP STORIES BY CATEGORY
             const groupedStories = {};
 
             for (const c of categories) {
@@ -54,8 +53,8 @@ const getStory = async (req, res) => {
                     const totalLikes = story.likes.length;
                     return {
                         ...story.toJSON(),
-                        slidesLength: story.slides.length, // Calculate slides length
-                        totalLikes: totalLikes // Include total likes count
+                        slidesLength: story.slides.length,
+                        totalLikes: totalLikes
                     };
                 }));
             }
@@ -67,13 +66,12 @@ const getStory = async (req, res) => {
             })
                 .sort({ createdAt: -1 });
 
-            // Calculate total likes for each story
             stories = await Promise.all(stories.map(async (story) => {
                 const totalLikes = story.likes.length;
                 return {
                     ...story.toJSON(),
-                    slidesLength: story.slides.length, // Calculate slides length
-                    totalLikes: totalLikes // Include total likes count
+                    slidesLength: story.slides.length,
+                    totalLikes: totalLikes
                 };
             }));
 
@@ -92,7 +90,6 @@ const getStoryById = async (req, res) => {
     const { userId } = req.query;
 
     try {
-        // Find the story by ID
         const storyDoc = await story.findById(slideId);
         if (!storyDoc) {
             return res.status(404).json({
@@ -100,7 +97,6 @@ const getStoryById = async (req, res) => {
             });
         }
 
-        // Calculate total likes count
         const totalLikes = storyDoc.likes.length;
 
         let liked = false;
@@ -108,9 +104,7 @@ const getStoryById = async (req, res) => {
         if (userId) {
             const userDoc = await user.findById(userId);
             if (userDoc) {
-                // Check if the user has liked the story
                 liked = storyDoc.likes.some(like => like.user.toString() === userId);
-                // Check if the user has bookmarked the story
                 bookmarked = userDoc.bookmarks.includes(slideId);
 
                 return res.json({
@@ -176,28 +170,6 @@ const editStory = async (req, res) => {
         });
     }
 }
-// const viewStoryByCategory = async (req, res) => {
-//     const categoryToFind = req.query.category
-
-//     if (categoryToFind === "all") {
-//         const allStories = await story.find()
-//         return res.json({
-//             stories: allStories
-//         })
-//     }
-
-//     const result = await story.find({ category: categoryToFind })
-//     if (!result) {
-//         return res.status(400).json({
-//             message: "no story of this category"
-//         })
-//     }
-
-//     return res.json({
-//         stories: result
-//     })
-
-// }
 
 const likeStory = async (req, res, next) => {
     const slideId = req.params.slideId
@@ -264,19 +236,17 @@ const getAllBookmarks = async (req, res, next) => {
             });
         }
 
-        // Populate bookmarks with story details and total likes
         const populatedBookmarks = await userObj.populate({
             path: "bookmarks",
             populate: {
                 path: "likes",
-                select: "user", // Select only the user field of each like
+                select: "user",
             },
         });
 
-        // Calculate total likes for each bookmarked story
         const bookmarksWithLikesLength = populatedBookmarks.bookmarks.map((bookmark) => ({
             ...bookmark.toObject(),
-            totalLikes: bookmark.likes.length, // Add total likes count
+            totalLikes: bookmark.likes.length,
         }));
 
         res.json({

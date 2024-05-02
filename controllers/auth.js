@@ -20,14 +20,12 @@ const registeredUser = async (req, res, next) => {
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        await user.create({
+        const newUser = await user.create({
             username,
             password: hashedPassword
         })
 
-        const token = jwt.sign({ name: username }, process.env.SECRET_KEY)
-
-
+        const token = jwt.sign({ userId: newUser._id, name: newUser.username }, process.env.SECRET_KEY)
 
         res.json({
             message: "User created successfully",

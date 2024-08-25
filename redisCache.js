@@ -1,8 +1,9 @@
 const redis = require('redis');
 const NodeCache = require('node-cache');
+const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 
 const redisClient = redis.createClient({
-  url: 'redis://127.0.0.1:6379'
+  url: REDIS_URL
 });
 
 const nodeCache = new NodeCache();

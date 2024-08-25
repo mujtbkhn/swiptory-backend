@@ -27,9 +27,11 @@ const registeredUser = async (req, res, next) => {
 
         const token = jwt.sign({ userId: newUser._id, name: newUser.username }, process.env.SECRET_KEY)
 
+        // const decodedToken = jwt.verify(token, process.env.SECRET_KEY)
         res.json({
             message: "User created successfully",
-            token: token
+            token: token,
+            // userId: decodedToken.userId
         })
     } catch (error) {
         next(error)

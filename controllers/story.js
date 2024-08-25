@@ -1,5 +1,6 @@
 const story = require("../models/story")
 const user = require("../models/user")
+const { get, set } = require("../redisCache")
 
 const createStory = async (req, res) => {
     const { slides, bookmark, likes } = req.body
@@ -41,6 +42,12 @@ const getStory = async (req, res) => {
             stories = await story.find({ createdBy: userId });
             return res.status(200).json({ stories: stories });
         } else if (category && category.toLowerCase() === "all") {
+            const cacheKey = "all_stories"
+            const cachedStories = await get(cacheKey)
+
+            if (cachedStories) {
+                return res.status(200).json({ stories: JSON.parse(cachedStories) });
+            }
             const groupedStories = {};
 
             for (const c of categories) {
@@ -58,9 +65,16 @@ const getStory = async (req, res) => {
                     };
                 }));
             }
-
+            await set(cacheKey, JSON.stringify(groupedStories), 600)
             return res.status(200).json({ stories: groupedStories });
         } else {
+            const cacheKey = `category_${category}`;
+            const cachedStories = await get(cacheKey);
+
+            if (cachedStories) {
+                return res.status(200).json({ stories: JSON.parse(cachedStories) });
+            }
+
             stories = await story.find({
                 slides: { $elemMatch: { category: category } },
             })
@@ -75,6 +89,7 @@ const getStory = async (req, res) => {
                 };
             }));
 
+            await set(cacheKey, JSON.stringify(stories), 600); // 10 minutes expiry
             return res.status(200).json({ stories: stories });
         }
 

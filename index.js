@@ -6,6 +6,8 @@ const PORT = 3000
 const mongoose = require("mongoose")
 const authRoute = require("./routes/auth")
 const storyRoute = require("./routes/story")
+const { connectToRedis } = require("./redisCache")
+const { preloadCache } = require("./preloadCache")
 
 app.use(express.json())
 app.use(cors())
@@ -19,10 +21,28 @@ app.use((error, req, res, next) => {
     })
 })
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("Database connected!"))
-    .catch(() => console.log("Failed to connect"))
+const startServer = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI)
+        console.log("Database connected!")
 
-app.listen(PORT, () => {
-    console.log(`server running on port ${PORT}`)
-})
+        try {
+            await connectToRedis()
+            console.log("Redis connected!")
+            await preloadCache()
+            console.log("Cache preloaded successfully")
+        } catch (redisError) {
+            console.error("Failed to connect to Redis or preload cache:", redisError)
+            console.log("Continuing without Redis...")
+        }
+
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`)
+        })
+    } catch (mongoError) {
+        console.error("Failed to connect to MongoDB:", mongoError)
+        process.exit(1)
+    }
+}
+
+startServer()
